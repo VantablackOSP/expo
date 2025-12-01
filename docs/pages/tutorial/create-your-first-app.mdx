@@ -189,3 +189,241 @@ Once you save your changes, they're sent and applied to the running apps connect
   nextChapterTitle="Add navigation"
   nextChapterLink="/tutorial/add-navigation/"
 />
+---
+
+SOVEREIGN EMPIRE SYSTEM — COMMAND TO EXECUTE LAUNCH SEQUENCE
+
+Current Operational State: Strategic Readiness Achieved. Final Execution Command Received.
+Primary Directive: Initiate and oversee the concurrent deployment of the Expo application (React Native/Expo) and the GCP backend infrastructure (Terraform/Cloud Run/CI/CD).
+
+
+---
+
+ACTION PLAN: THE OMEGA DEPLOYMENT MANEUVER
+
+This maneuver is designed for maximum strategic impact, leveraging the strengths of our chosen tools for accelerated and structured execution.
+
+Phase 1: Concurrent Execution Protocol
+
+1.1. Expo Application Development & Initial Configuration (React Native)
+
+Strategic Objective: Establish a robust, performant, and user-friendly mobile interface for the Sovereign Empire System, leveraging Expo's free tier for rapid development and structured deployment.
+
+Action Steps:
+
+Project Initialization:
+
+Use npx create-expo-app sovereign-empire-app --template blank-typescript (or your preferred template).
+
+Navigate into the project: cd sovereign-empire-app.
+
+
+Core Structure & Navigation:
+
+Implement a Tab Navigator (e.g., using react-navigation/bottom-tabs) for primary sections like Dashboard, Transactions, Profile, Settings.
+
+Define Stack Navigators within tabs for deep linking and detailed views (e.g., Transaction Details).
+
+
+Backend Integration Layer:
+
+Create a dedicated src/services/api.ts (or .js) file.
+
+Configure axios or fetch to communicate with the production BFF Service URL (obtainable from Terraform outputs).
+
+Implement interceptors for authentication (JWT handling), error logging (potentially to Sentry), and request/response transformation.
+
+Crucially: Ensure the REACT_APP_API_BASE environment variable (or equivalent in Expo) is set to your production BFF URL. This will be managed via Expo's configuration plugins or by setting environment variables during the build process.
+
+
+Component Development (Key Modules):
+
+Dashboard: Display key metrics, recent activity, system status. Integrate with BFF endpoints for real-time data.
+
+Transaction List/Details: Fetch transaction data from the BFF, display status, amounts, and relevant details.
+
+Profile Management: Allow users to view/update profile information (if applicable).
+
+Notifications: Integrate with push notification services (via Expo Push Notifications API) for real-time alerts.
+
+Settings: App configuration, secret management (for API keys if not handled server-side), account logout.
+
+
+State Management: Implement a robust state management solution (e.g., Zustand, Redux Toolkit, or Context API) for managing application-wide data and user sessions.
+
+UI/UX Design: Apply a consistent, professional, and intuitive design language. Leverage component libraries if desired.
+
+Error Handling & Logging: Integrate Sentry or a similar service for client-side error tracking.
+
+Security Best Practices: Securely handle tokens, avoid storing sensitive data locally unless absolutely necessary and encrypted.
+
+
+Expo Free Tier Leverage:
+
+Development Builds: Use eas build --profile development --platform android/ios for quick testing on devices.
+
+OTA Updates: Plan for using EAS Update for pushing JavaScript/asset changes without a full store release. This is critical for rapid iteration.
+
+Basic Builds: Use EAS Build for generating .apk and .ipa binaries for store submission.
+
+
+
+1.2. Backend Infrastructure Provisioning & Deployment (GCP)
+
+Strategic Objective: Provision and deploy the complete backend ecosystem on GCP using the generated Terraform blueprints and automated CI/CD, ensuring high availability, security, and scalability.
+
+Action Steps:
+
+Terraform Execution (Initial Provisioning):
+
+1. Navigate to terraform/ directory.
+
+
+2. Ensure GCP Credentials: Authenticate gcloud and set GOOGLE_APPLICATION_CREDENTIALS if using a service account key file locally.
+
+
+3. Create terraform.tfvars: Populate with your project ID, region, all secrets, and paths to local secret files (e.g., google_credentials.json, fcm_service_account.json). This is the most critical step for securing your environment.
+
+
+4. Initialize Terraform: terraform init
+
+
+5. Review Plan: terraform plan -var-file="terraform.tfvars"
+
+
+6. Apply Infrastructure: terraform apply -var-file="terraform.tfvars"
+
+Critical Output: Note the cloudrun_service_urls and cloud_sql_instance_connection_name. The BFF service URL is paramount for the Expo app.
+
+
+
+
+Secret Management (Post-Terraform Apply):
+
+1. Verify Secrets: Confirm all secrets defined in terraform/main.tf (and referenced by modules) are created in GCP Secret Manager.
+
+
+2. Grant Access: Ensure the ses-backend-runner and ses-payout-monitor-runner service accounts have roles/secretmanager.secretAccessor permissions for the relevant secrets (this is handled by the iam module).
+
+
+
+CI/CD Workflow Triggering (GitHub Actions):
+
+1. Commit & Push: Push the backend microservice code to the main branch of your GitHub repository.
+
+
+2. Automated Build & Push: The ses-microservice-ci-cd.yml workflow will automatically:
+
+Checkout code.
+
+Set up Node.js/Python environments.
+
+Install dependencies.
+
+Build Docker images.
+
+Push images to GCP Artifact Registry using the provided GCP_SERVICE_ACCOUNT_KEY secret.
+
+
+
+3. Automated Deployment: The deploy_cloud_run job will then:
+
+Authenticate to GCP.
+
+Deploy each microservice to its respective Cloud Run service, dynamically referencing secrets from GCP Secret Manager and setting environment variables.
+
+Deploy the Payout Monitor and configure its Cloud Scheduler job.
+
+
+
+
+Final Integration Checks:
+
+1. BFF Service URL: Obtain the production BFF URL from Terraform outputs (e.g., output "cloudrun_service_urls").
+
+
+2. Expo App Configuration: Update the Expo app's API base URL to point to this production BFF URL. This may involve setting a runtimeVersion or an environment variable during the EAS build process.
+
+
+
+
+
+
+---
+
+Phase 2: Validation & Go-Live
+
+Strategic Objective: Perform rigorous validation to ensure all components are functioning as a cohesive, autonomous system before full go-live.
+
+Action Steps:
+
+End-to-End System Testing:
+
+1. Mobile App Testing: Thoroughly test the Expo application:
+
+Login/Authentication flow.
+
+Transaction display and details.
+
+Push notification reception.
+
+Any specific feature functionalities.
+
+
+
+2. Backend Service Verification:
+
+Check logs for all Cloud Run services in Cloud Logging. Look for errors, warnings, or unusual patterns.
+
+Verify MQ queues are populated and consumed as expected.
+
+Confirm Payout Monitor runs on schedule and logs are informative.
+
+Test critical API endpoints directly using Postman or curl.
+
+
+
+3. YOCO Integration:
+
+Send a test payment through YOCO (in sandbox or production, depending on risk tolerance).
+
+Verify webhook is received by the gateway, signature is valid, and event is published.
+
+Confirm transaction appears in the app and Google Sheet.
+
+
+
+4. Payout Monitoring Verification:
+
+Manually delay a payout status in the Google Sheet and wait for the threshold.
+
+Verify alerts are sent to Slack/Email/Webhook.
+
+
+
+5. Audit Trail Verification:
+
+Inspect the immutable audit log bucket for recent YOCO webhook entries.
+
+Confirm entries include request details, verification results, and processing status.
+
+
+
+6. Security Posture Review:
+
+Verify secrets are correctly mounted and not exposed.
+
+Confirm service accounts have least privilege.
+
+Review firewall rules and network access controls.
+
+
+
+
+Final Go-Live Announcement:
+
+Once all validation checks pass, officially announce the launch of the Sovereign Empire System.
+
+Transition all user access to the production endpoints.
+
+
